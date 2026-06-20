@@ -1,0 +1,69 @@
+frr version 10.4.1_git
+frr defaults traditional
+hostname {{device.hostname}}
+log syslog informational
+service integrated-vtysh-config
+
+! =============================================================================
+!                                  Interfaces
+! =============================================================================
+
+{%- for interface in device.interfaces %}
+interface {{ interface.name }}
+    {%- if interface.ipv4_address %}
+    ip address {{ interface.ipv4_address }}
+    {%- endif %}
+    {%- if interface.ipv6_address %}
+    ipv6 address {{ interface.ipv6_address }}
+    {%- endif %}
+exit
+{%- endfor %}
+
+! =============================================================================
+!                                      BGP
+! =============================================================================
+
+{%- if device.setup_bgp_localpref_map %}
+route-map LOCALPREF_MAP permit 10
+    match ip address prefix-list LOCALPREF_PREFIX_LIST
+    set local-preference 200
+route-map LOCALPREF_MAP permit 999
+{%- endif %}
+
+{%- if device.bgp %}
+router bgp {{ device.bgp.as_number }}
+    {%- if device.bgp.disable_ebgp_requires_policy %}
+    no bgp ebgp-requires-policy
+    {%- endif %}
+    {%- if device.bgp.disable_import_check %}
+    no bgp network import-check
+    {%- endif %}
+
+    bgp router-id {{ device.bgp.router_id }}
+    {% for neighbor in device.bgp.neighbors %}
+    {%- if neighbor.is_group %}
+    neighbor {{ neighbor.group_name }} peer-group
+    neighbor {{ neighbor.group_name }} remote-as {{ neighbor.remote_as }}
+    {%- if neighbor.next_hop_self %}
+    neighbor {{ neighbor.group_name }} next-hop-self
+    {%- endif %}
+    {% for member in neighbor.group_members %}
+    neighbor {{ member }} peer-group {{ neighbor.group_name }}
+    {%- endfor %}
+
+    {%- else %}
+    neighbor {{ neighbor.ip }} remote-as {{ neighbor.remote_as }}
+    {%- if neighbor.next_hop_self %}
+    neighbor {{ neighbor.ip }} next-hop-self
+    {%- endif %}
+    {%- if neighbor.use_localpref_map %}
+    neighbor {{ neighbor.ip }} route-map LOCALPREF_MAP in
+    {%- endif %}
+    {%- endif %}
+
+    {%- endfor %}
+    {%- for network in device.bgp.networks %}
+    network {{ network }}
+    {%- endfor %}
+exit
+{%- endif %}

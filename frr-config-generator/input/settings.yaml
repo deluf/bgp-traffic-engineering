@@ -1,0 +1,199 @@
+devices:
+
+  - hostname: CE1
+    interfaces:
+      - name: eth1
+        ipv4_address: 10.0.1.1/31
+      - name: eth2
+        ipv4_address: 10.0.2.1/31
+      - name: eth3
+        ipv4_address: 1.0.0.1/24
+      - name: lo0
+        ipv4_address: 192.168.1.1/32
+    bgp:
+      as_number: 65001
+      router_id: 192.168.1.1
+      neighbors:
+        - ip: 10.0.1.0
+          remote_as: 65020
+        - ip: 10.0.2.0
+          remote_as: 65020
+      networks:
+        - 1.0.0.0/24
+
+  - hostname: CE2
+    interfaces:
+      - name: eth1
+        ipv4_address: 10.0.4.1/31
+      - name: eth2
+        ipv4_address: 10.0.3.1/31
+      - name: eth3
+        ipv4_address: 2.0.0.1/24
+      - name: lo0
+        ipv4_address: 192.168.2.1/32
+    bgp:
+      as_number: 65002
+      router_id: 192.168.2.1
+      neighbors:
+        - ip: 10.0.3.0
+          remote_as: 65020
+        - ip: 10.0.4.0
+          remote_as: 65020
+      networks:
+        - 2.0.0.0/24
+
+  - hostname: GW1
+    interfaces:
+      - name: eth1
+        ipv4_address: 10.0.5.0/31
+      - name: eth2
+        ipv4_address: 172.16.0.3/24
+      - name: lo0
+        ipv4_address: 192.168.3.3/32
+    setup_bgp_localpref_map: True
+    bgp:
+      as_number: 65020
+      router_id: 192.168.3.3
+      neighbors:
+        - ip: 10.0.5.1
+          remote_as: 65004
+          use_localpref_map: True
+        - is_group: True
+          group_name: IBGP-PEERS
+          remote_as: 65020
+          next_hop_self: True
+          group_members:
+            - 172.16.0.1
+            - 172.16.0.2
+            - 172.16.0.4
+
+  - hostname: GW2
+    interfaces:
+      - name: eth1
+        ipv4_address: 10.0.6.0/31
+      - name: eth2
+        ipv4_address: 172.16.0.4/24
+      - name: lo0
+        ipv4_address: 192.168.3.4/32
+    setup_bgp_localpref_map: True
+    bgp:
+      as_number: 65020
+      router_id: 192.168.3.4
+      neighbors:
+        - ip: 10.0.6.1
+          remote_as: 65005
+          use_localpref_map: True
+        - is_group: True
+          group_name: IBGP-PEERS
+          remote_as: 65020
+          next_hop_self: True
+          group_members:
+            - 172.16.0.1
+            - 172.16.0.2
+            - 172.16.0.3
+
+  - hostname: PE1
+    interfaces:
+      - name: eth1
+        ipv4_address: 10.0.1.0/31
+      - name: eth2
+        ipv4_address: 10.0.3.0/31
+      - name: eth3
+        ipv4_address: 172.16.0.1/24
+      - name: lo0
+        ipv4_address: 192.168.3.1/32
+    bgp:
+      as_number: 65020
+      router_id: 192.168.3.1
+      neighbors:
+        - ip: 10.0.1.1
+          remote_as: 65001
+        - ip: 10.0.3.1
+          remote_as: 65002
+        - is_group: True
+          group_name: IBGP-PEERS
+          remote_as: 65020
+          next_hop_self: True
+          group_members:
+            - 172.16.0.2
+            - 172.16.0.3
+            - 172.16.0.4
+
+  - hostname: PE2
+    interfaces:
+      - name: eth1
+        ipv4_address: 10.0.4.0/31
+      - name: eth2
+        ipv4_address: 10.0.2.0/31
+      - name: eth3
+        ipv4_address: 172.16.0.2/24
+      - name: lo0
+        ipv4_address: 192.168.3.2/32
+    bgp:
+      as_number: 65020
+      router_id: 192.168.3.2
+      neighbors:
+        - ip: 10.0.2.1
+          remote_as: 65001
+        - ip: 10.0.4.1
+          remote_as: 65002
+        - is_group: True
+          group_name: IBGP-PEERS
+          remote_as: 65020
+          next_hop_self: True
+          group_members:
+            - 172.16.0.1
+            - 172.16.0.3
+            - 172.16.0.4
+
+  - hostname: UP1
+    interfaces:
+      - name: eth1
+        ipv4_address: 10.0.5.1/31
+      - name: lo131
+        ipv4_address: 131.114.0.1/16
+      - name: lo192
+        ipv4_address: 192.0.2.1/24
+      - name: lo198
+        ipv4_address: 198.51.100.1/24
+      - name: lo203
+        ipv4_address: 203.0.113.1/24
+      - name: lo0
+        ipv4_address: 192.168.4.1/32
+    bgp:
+      as_number: 65004
+      router_id: 192.168.4.1
+      neighbors:
+        - ip: 10.0.5.0
+          remote_as: 65020
+      networks:
+        - 131.114.0.0/16
+        - 192.0.2.0/24
+        - 198.51.100.0/24
+        - 203.0.113.0/24
+
+  - hostname: UP2
+    interfaces:
+      - name: eth1
+        ipv4_address: 10.0.6.1/31
+      - name: lo131
+        ipv4_address: 131.114.0.1/16
+      - name: lo192
+        ipv4_address: 192.0.2.1/24
+      - name: lo198
+        ipv4_address: 198.51.100.1/24
+      - name: lo203
+        ipv4_address: 203.0.113.1/24
+      - name: lo0
+        ipv4_address: 192.168.5.1/32
+    bgp:
+      as_number: 65005
+      router_id: 192.168.5.1
+      neighbors:
+        - ip: 10.0.6.0
+          remote_as: 65020
+      networks:
+        - 131.114.0.0/16
+        - 192.0.2.0/24
+        - 203.0.113.0/24
+        - 198.51.100.0/24

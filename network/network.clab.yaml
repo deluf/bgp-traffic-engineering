@@ -1,0 +1,234 @@
+name: network
+
+# Set the management network to a known subnet.
+#
+# This subnet will be used in the init scripts the nodes
+#  in order to isolate management traffic from the rest.
+#
+# The management interface is a bridge that connects all the containers.
+# The host is connected first and gets the .1 address in the subnet
+mgmt:
+  network: management
+  ipv4-subnet: 10.255.255.0/24
+
+topology:
+
+  nodes:
+
+    customer1:
+      kind: linux
+      image: alpine:latest
+      env: 
+        MY_IP: 1.0.0.254/24
+        MY_GW: 1.0.0.1
+      binds:
+        - ./config/alpine/configure.sh:/tmp/configure.sh
+      exec: 
+        - sh /tmp/configure.sh
+
+    customer2:
+      kind: linux
+      image: alpine:latest 
+      env: 
+        MY_IP: 2.0.0.254/16
+        MY_GW: 2.0.0.1
+      binds:  
+        - ./config/alpine/configure.sh:/tmp/configure.sh
+      exec: 
+        - sh /tmp/configure.sh 
+
+    manager:
+      kind: linux
+      image: local/manager:latest 
+      env: 
+        MY_IP: 172.16.0.254/24
+        MY_GW: 172.16.0.3
+      binds:
+        - ../automation-system:/automation-system
+        - ./config/alpine/configure.sh:/tmp/configure.sh
+      exec: 
+        - sh /tmp/configure.sh
+
+    CE1: 
+      kind: linux
+      image: local/frr-ssh:latest
+      binds:
+        - ./config/frr/nodes/__clabNodeName__.conf:/etc/frr/frr.conf
+        - ./config/frr/daemons:/etc/frr/daemons
+        - ./config/frr/vtysh.conf:/etc/frr/vtysh.conf
+        - ./config/frr/configure.sh:/tmp/configure.sh
+      exec:
+        - bash /tmp/configure.sh
+    
+    CE2:  
+      kind: linux
+      image: local/frr-ssh:latest
+      binds:
+        - ./config/frr/nodes/__clabNodeName__.conf:/etc/frr/frr.conf
+        - ./config/frr/daemons:/etc/frr/daemons
+        - ./config/frr/vtysh.conf:/etc/frr/vtysh.conf
+        - ./config/frr/configure.sh:/tmp/configure.sh
+      exec:
+        - bash /tmp/configure.sh
+
+    PE1:  
+      kind: linux
+      image: local/frr-ssh:latest
+      binds:
+        - ./config/frr/nodes/__clabNodeName__.conf:/etc/frr/frr.conf
+        - ./config/frr/daemons:/etc/frr/daemons
+        - ./config/frr/vtysh.conf:/etc/frr/vtysh.conf
+        - ./config/frr/configure.sh:/tmp/configure.sh
+      exec:
+        - bash /tmp/configure.sh
+
+    PE2:  
+      kind: linux
+      image: local/frr-ssh:latest
+      binds:
+        - ./config/frr/nodes/__clabNodeName__.conf:/etc/frr/frr.conf
+        - ./config/frr/daemons:/etc/frr/daemons
+        - ./config/frr/vtysh.conf:/etc/frr/vtysh.conf
+        - ./config/frr/configure.sh:/tmp/configure.sh
+      exec:
+        - bash /tmp/configure.sh
+
+    GW1:  
+      kind: linux
+      image: local/frr-ssh:latest
+      binds:
+        - ./config/frr/nodes/__clabNodeName__.conf:/etc/frr/frr.conf
+        - ./config/frr/daemons:/etc/frr/daemons
+        - ./config/frr/vtysh.conf:/etc/frr/vtysh.conf
+        - ./config/frr/configure.sh:/tmp/configure.sh
+      exec:
+        - bash /tmp/configure.sh
+
+    GW2: 
+      kind: linux
+      image: local/frr-ssh:latest
+      binds:
+        - ./config/frr/nodes/__clabNodeName__.conf:/etc/frr/frr.conf
+        - ./config/frr/daemons:/etc/frr/daemons
+        - ./config/frr/vtysh.conf:/etc/frr/vtysh.conf
+        - ./config/frr/configure.sh:/tmp/configure.sh
+      exec:
+        - bash /tmp/configure.sh
+
+    UP1: 
+      kind: linux
+      image: local/frr-ssh:latest
+      binds:
+        - ./config/frr/nodes/__clabNodeName__.conf:/etc/frr/frr.conf
+        - ./config/frr/daemons:/etc/frr/daemons
+        - ./config/frr/vtysh.conf:/etc/frr/vtysh.conf
+        - ./config/frr/configure.sh:/tmp/configure.sh
+      exec:
+        - bash /tmp/configure.sh
+
+    UP2: 
+      kind: linux
+      image: local/frr-ssh:latest
+      binds:
+        - ./config/frr/nodes/__clabNodeName__.conf:/etc/frr/frr.conf
+        - ./config/frr/daemons:/etc/frr/daemons
+        - ./config/frr/vtysh.conf:/etc/frr/vtysh.conf
+        - ./config/frr/configure.sh:/tmp/configure.sh
+      exec:
+        - bash /tmp/configure.sh
+
+    # Bridge that interconnect nodes in the core network
+    br-core:
+      kind: bridge
+
+    # NOTE: bridges must be created manually!
+    #  sudo ip link add name {bridge name} type bridge
+    #  sudo ip link set dev {bridge name} up
+    
+
+  links:
+
+    - endpoints: ["CE1:eth1", "PE1:eth1"]
+    - endpoints: ["CE1:eth2", "PE2:eth2"]
+    - endpoints: ["customer1:eth1", "CE1:eth3"]
+
+    - endpoints: ["CE2:eth1", "PE2:eth1"]
+    - endpoints: ["CE2:eth2", "PE1:eth2"]
+    - endpoints: ["customer2:eth1", "CE2:eth3"]
+    
+    - endpoints: ["PE1:eth3", "br-core:core-eth1"]
+    - endpoints: ["PE2:eth3", "br-core:core-eth2"]
+    - endpoints: ["GW1:eth2", "br-core:core-eth3"]
+    - endpoints: ["GW2:eth2", "br-core:core-eth4"]
+    - endpoints: ["manager:eth1", "br-core:core-eth5"]
+    
+    - endpoints: ["GW1:eth1", "UP1:eth1"]
+    - endpoints: ["GW2:eth1", "UP2:eth1"]
+
+    # Loopback interfaces to define router identifiers (/32 addresses)
+    - type: dummy
+      endpoint:
+        node: CE1
+        interface: lo0
+    - type: dummy
+      endpoint:
+        node: CE2
+        interface: lo0  
+    - type: dummy
+      endpoint:
+        node: PE1
+        interface: lo0
+    - type: dummy
+      endpoint:
+        node: PE2
+        interface: lo0
+    - type: dummy
+      endpoint:
+        node: GW1
+        interface: lo0
+    - type: dummy
+      endpoint:
+        node: GW2
+        interface: lo0
+    - type: dummy
+      endpoint:
+        node: UP1
+        interface: lo0
+    - type: dummy
+      endpoint:
+        node: UP2
+        interface: lo0
+
+    # Loopback interfaces to simulate external networks
+    - type: dummy
+      endpoint:
+        node: UP1
+        interface: lo131
+    - type: dummy
+      endpoint:
+        node: UP1
+        interface: lo192
+    - type: dummy
+      endpoint:
+        node: UP1
+        interface: lo198
+    - type: dummy
+      endpoint:
+        node: UP1
+        interface: lo203
+    - type: dummy
+      endpoint:
+        node: UP2
+        interface: lo131
+    - type: dummy
+      endpoint:
+        node: UP2
+        interface: lo192
+    - type: dummy
+      endpoint:
+        node: UP2
+        interface: lo198
+    - type: dummy
+      endpoint:
+        node: UP2
+        interface: lo203
